@@ -1,0 +1,197 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function techinsite_menu() {
+  $items['remont'] = array(
+    'title' => 'Зараз в ремонті',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('techinsite_page'),
+    'access arguments' => array('access content'),
+	'menu_name' => 'main-menu',
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function techinsite_theme() {
+  return array(
+    'simple' => array(
+      'render element' => 'form',
+      'file' => 'techinsite.theme.inc',
+    ),
+	'cartridge' => array(
+      'render element' => 'form',
+      'file' => 'techinsite.theme.inc',
+    ),
+  );
+}
+
+/**
+ * Return tech, which in KIOC now.
+ */
+ function techinsite_get($header, $customer, $table) {
+	db_set_active('sqlite');
+	$items = db_select($table, 't')
+    ->fields('t', array('act', 'tech', 'inventory', 'status', 'customer'))
+	->condition('t.status', 4, '!=')
+	->condition('t.customer', $customer, '==')
+    ->extend('PagerDefault')
+    ->limit(9999)
+    ->extend('TableSort')
+    ->orderByHeader($header)
+    ->execute();
+	db_set_active('default');
+	return $items;
+}
+
+/**
+ * Return value of key 'status'.
+ */
+function get_status($status_index) {
+	$status = '';
+	switch ($status_index) {
+    case 1:
+         $status = 'В роботі';
+        break;
+    case 2:
+        $status = 'В роботі';
+        break;
+    case 3:
+        $status = 'Готово';
+        break;
+	}
+	return $status;
+}
+
+/**
+ * Return form.
+ */
+function techinsite_page($form, &$form_state) {
+	
+	$form['terms'] = array(
+    '#tree' => TRUE, 
+    '#prefix' => '<div id="terms">', 
+    '#suffix' => '</div>', 
+	);
+
+  // Если сработает AJAX, то в $form_state['values']['terms'] будут выбранные значения селектов
+  $terms_values = isset($form_state['values']['terms']) ? $form_state['values']['terms'] : array();
+  // Селектов будет генерится на 1 больше чем есть в $form_state['values']['terms']
+  $terms_values += array('term' . (count($terms_values) + 1) => 'none');
+  // В первом селекте будут выводиться термины без родителя
+  $parent_tid = 0; 
+
+  $count = 0;
+  $vid = taxonomy_vocabulary_machine_name_load('techinsite_departments')->vid;
+  foreach ($terms_values as $input_name => $tid) {
+    // Завершаем цикл если в предыдущем селекте выбрано значение none или null
+    // или если в словаре нет дочерних терминов от $parent_tid 1 уровень в глубину словаря
+    if ($parent_tid === 'none' || !($terms = taxonomy_get_tree($vid, $parent_tid, 1))) {
+      break;
+    }
+
+      $count++;
+    $options = array('none' => '-- Оберіть організацію --');
+    foreach ($terms as $term) {
+      $options[$term->tid] = $term->name;
+    }
+
+    $form['terms'][$input_name] = array(
+      '#type' => 'select',
+      '#options' => $options,
+      '#default_value' => $tid,
+      '#ajax' => array(
+        'callback' => 'techinsite_page_ajax_callback',
+        'wrapper' => 'terms',
+      ),
+    );
+    $parent_tid = isset($options[$tid]) ? $tid : 'none';
+  }
+  
+  if (isset($form_state['values']['terms']['term'.$count]) && $form_state['values']['terms']['term'.$count] != 'none'){
+    $filter = $form_state['values']['terms']['term'.$count];
+	$id_reg = taxonomy_term_load($filter)->id_sqlite['und'][0]['value'];
+
+		$header = array(
+			array('data' => 'Акт ремонта', 'field' => 'act', 'sort' => 'ASC'),
+			array('data' => 'Техніка', 'field' => 'tech', 'sort' => 'ASC'),
+			array('data' => 'Інв. номер', 'field' => 'inventory', 'sort' => 'ASC'),
+			array('data' => 'В якому стані', 'field' => 'status', 'sort' => 'ASC'),
+		);
+		  
+		$form['terms']['simple_table'] = array(
+			'#type'  => 'container',
+			'#theme' => 'simple',
+			'#header' => $header,
+		);
+
+		$items = techinsite_get($header, $id_reg, 'site');
+		foreach ($items as $id => $item) {
+			$form['terms']['simple_table'][$id]['act'] = array(
+				'#markup' => $item->act,
+			);
+		 
+			$form['terms']['simple_table'][$id]['tech'] = array(
+				'#markup' => $item->tech,
+			);
+		 
+			$form['terms']['simple_table'][$id]['inventory'] = array(
+				'#markup' => $item->inventory,
+			);
+		  
+			$form['terms']['simple_table'][$id]['status'] = array(
+				'#markup' => get_status($item->status),
+			);
+		}
+
+		$form['pager']['#markup'] = theme('pager');
+
+	  /****************************************************/
+	  $header_cartridge = array(
+		array('data' => 'Акт ремонта', 'field' => 'act', 'sort' => 'ASC'),
+		array('data' => 'Картридж', 'field' => 'tech', 'sort' => 'ASC'),
+		array('data' => 'Інв. номер', 'field' => 'inventory', 'sort' => 'ASC'),
+		array('data' => 'В якому стані', 'field' => 'status', 'sort' => 'ASC'),
+	  );
+	  
+	  $form['terms']['table_cartridge'] = array(
+		'#type'  => 'container',
+		'#theme' => 'cartridge',
+		'#header' => $header_cartridge,
+	  );
+	  
+	  $items = techinsite_get($header_cartridge, $id_reg, 'sitek');
+		  foreach ($items as $id => $item) {
+			  $form['terms']['table_cartridge'][$id]['act'] = array(
+				'#markup' => $item->act,
+			  );
+			 
+			  $form['terms']['table_cartridge'][$id]['tech'] = array(
+				'#markup' => $item->tech,
+			  );
+			 
+			  $form['terms']['table_cartridge'][$id]['inventory'] = array(
+				'#markup' => $item->inventory,
+			  );
+			  
+			  $form['terms']['table_cartridge'][$id]['status'] = array(
+				'#markup' => get_status($item->status),
+			  );
+		  }
+	  
+	  $form['pager']['#markup'] = theme('pager');
+	}
+  return $form;
+}
+
+/**
+ * Ajax callback.
+ */
+function techinsite_page_ajax_callback($form, &$form_state) {
+	
+  return $form['terms'];
+}

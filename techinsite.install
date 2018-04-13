@@ -1,0 +1,185 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the techinsite module.
+ */
+ 
+ /**
+ * Implements hook_install().
+ */
+function techinsite_install() {
+	$vocabulary_machine_name = 'techinsite_departments';
+	if (taxonomy_vocabulary_machine_name_load($vocabulary_machine_name)) {
+		
+	}else{
+		$vocabulary  = (object) array(
+			'name' => 'Организации обслуживаемые КИВЦ',
+			'description' => 'Словарь с двухуровневой иерархией. Тип организации -> Название организации',
+			'machine_name' => $vocabulary_machine_name,
+		);
+		taxonomy_vocabulary_save($vocabulary);
+		$vid = $vocabulary->vid;
+
+		field_create_field(
+		array(
+			'field_name' => 'id_sqlite',
+			'cardinality' => 1,
+			'type' => 'text',
+			'settings' => array('max_length' => 60),
+		)
+		);
+		
+		field_create_instance(
+		array(
+			'entity_type' => 'taxonomy_term',
+			'bundle' => $vocabulary_machine_name,
+			'field_name' => 'id_sqlite',
+			'label' => 'id замовника в sqlite DB',
+			'widget' => array('type' => 'text_textfield'),
+			'display' => array(
+				'techinsite_departments_list' => array(
+					'label' => 'hidden',
+					'type' => 'hidden',
+				),
+			),
+		)
+		);
+		
+		$parent = array(
+			array('id_sqlite' =>  4, 'name' => 'ДСЗН'),
+			array('id_sqlite' =>  null, 'name' => 'УСЗН'),
+			array('id_sqlite' =>  null, 'name' => 'Терцентр'),
+			array('id_sqlite' =>  null, 'name' => 'Інтернатна установа'),
+			array('id_sqlite' =>  81, 'name' => 'Інше'),
+		);
+		
+		$nested_uszn = array(
+			array('id_sqlite' =>  1, 'name' => '2301 Олександрівський район'),
+			array('id_sqlite' =>  6, 'name' => '2302 Шевченківський район'),
+			array('id_sqlite' =>  7, 'name' => '2303 Дніпровський район'),
+			array('id_sqlite' =>  8, 'name' => '2304 Вознесенівський район'),
+			array('id_sqlite' => 10, 'name' => '2305 Якимівський район'),
+			array('id_sqlite' => 11, 'name' => '2306 місто Бердянськ'),
+			array('id_sqlite' => 12, 'name' => '2307 Бердянський район'),
+			array('id_sqlite' => 13, 'name' => '2308 Василівський район'),
+			array('id_sqlite' => 14, 'name' => '2309 Веселівський район'),
+			array('id_sqlite' => 15, 'name' => '2310 Гуляйпільський район'),
+			array('id_sqlite' => 16, 'name' => '2311 Запорізький район'),
+			array('id_sqlite' => 17, 'name' => '2312 К.Дніпровський район'),
+			array('id_sqlite' => 18, 'name' => '2313 Більмацький район'),
+			array('id_sqlite' => 19, 'name' => '2314 місто Мелітополь'),
+			array('id_sqlite' => 20, 'name' => '2315 Мелітопольський район'),
+			array('id_sqlite' => 21, 'name' => '2316 Михайлівський район'),
+			array('id_sqlite' => 22, 'name' => '2317 Оріхівський район'),
+			array('id_sqlite' => 23, 'name' => '2318 Пологівський район'),
+			array('id_sqlite' => 24, 'name' => '2319 Приазовський район'),
+			array('id_sqlite' => 25, 'name' => '2320 Приморський район'),
+			array('id_sqlite' => 26, 'name' => '2321 місто Токмак'),
+			array('id_sqlite' => 27, 'name' => '2322 Токмацький район'),
+			array('id_sqlite' => 28, 'name' => '2323 Вільнянський район'),
+			array('id_sqlite' => 29, 'name' => '2324 Чернігівський район'),
+			array('id_sqlite' => 30, 'name' => '2325 Новомиколаївський район'),
+			array('id_sqlite' => 31, 'name' => '2326 Заводський район'),
+			array('id_sqlite' => 32, 'name' => '2327 Комунарський район'),
+			array('id_sqlite' => 33, 'name' => '2328 місто Енергодар'),
+			array('id_sqlite' => 34, 'name' => '2329 Дніпрорудненський відділ'),
+			array('id_sqlite' => 35, 'name' => '2330 Хортицький район'),
+			array('id_sqlite' => 36, 'name' => '2331 Розівський район'),
+			array('id_sqlite' => 37, 'name' => '2332 Великобілозерський район'),
+		);
+		
+		$nested_ter = array(
+			array('id_sqlite' => 49, 'name' => 'місто Запоріжжя'),
+			array('id_sqlite' => 50, 'name' => 'місто Бердянськ'),
+			array('id_sqlite' => 51, 'name' => 'місто Енергодар'),
+			array('id_sqlite' => 52, 'name' => 'місто Мелітополь'),
+			array('id_sqlite' => 53, 'name' => 'місто Токмак'),
+			array('id_sqlite' => 54, 'name' => 'Бердянський район'),
+			array('id_sqlite' => 55, 'name' => 'Василівський район'),
+			array('id_sqlite' => 56, 'name' => 'Великобілозерський район'),
+			array('id_sqlite' => 57, 'name' => 'Веселівський район'),
+			array('id_sqlite' => 58, 'name' => 'Вільнянський район'),
+			array('id_sqlite' => 59, 'name' => 'Гуляйпільський район'),
+			array('id_sqlite' => 60, 'name' => 'Запорізький район'),
+			array('id_sqlite' => 61, 'name' => 'К.Дніпровський район'),
+			array('id_sqlite' => 62, 'name' => 'Більмацький район'),
+			array('id_sqlite' => 63, 'name' => 'Мельтопольський район'),
+			array('id_sqlite' => 64, 'name' => 'Михайлівський район'),
+			array('id_sqlite' => 65, 'name' => 'Новомиколаївський район'),
+			array('id_sqlite' => 66, 'name' => 'Оріхівський район'),
+			array('id_sqlite' => 67, 'name' => 'Пологівський район'),
+			array('id_sqlite' => 68, 'name' => 'Приазовський район'),
+			array('id_sqlite' => 69, 'name' => 'Приморський район'),
+			array('id_sqlite' => 70, 'name' => 'Розівський район'),
+			array('id_sqlite' => 71, 'name' => 'Токмацький район'),
+			array('id_sqlite' => 72, 'name' => 'Чернігівський район'),
+			array('id_sqlite' => 73, 'name' => 'Якимівський район'),
+		);
+		
+		$nested_internats = array(
+			array('id_sqlite' => 38, 'name' => 'Бердянський ПНІ'),
+			array('id_sqlite' => 39, 'name' => 'Запорізький ГП'),
+			array('id_sqlite' => 40, 'name' => 'Запорізький ДБІ'),
+			array('id_sqlite' => 41, 'name' => 'Чернігівський ДБІ'),
+			array('id_sqlite' => 42, 'name' => 'Кіровський будинок інвалідів'),
+			array('id_sqlite' => 43, 'name' => 'Веселівський ПНІ'),
+			array('id_sqlite' => 44, 'name' => 'Любицький ПНІ'),
+			array('id_sqlite' => 45, 'name' => 'Любомирівський ПНІ'),
+			array('id_sqlite' => 46, 'name' => 'Михайлівський ПНІ'),
+			array('id_sqlite' => 47, 'name' => 'Орловський ПНІ'),
+			array('id_sqlite' => 48, 'name' => 'Преславський ПНІ'),
+		);
+		
+		save_parent_terms($parent, $vid);
+		save_nested_terms($nested_uszn, $vid, 'УСЗН', $vocabulary_machine_name);
+		save_nested_terms($nested_ter, $vid, 'Терцентр', $vocabulary_machine_name);
+		save_nested_terms($nested_internats, $vid, 'Інтернатна установа', $vocabulary_machine_name);
+	}
+	
+}
+
+ /**
+ * Save parent terms in vocabulary.
+ */
+function save_parent_terms($terms, $vid) {
+	$count = 0;
+	foreach($terms as $t) {
+		$item = (object) array(
+			'name' => $t['name'],
+			'id_sqlite' => array('und' => array(0 => array('value' => $t['id_sqlite']),),),
+			'vid' => $vid,
+			'weight' => $count,
+		);
+		taxonomy_term_save($item);
+		$count++;
+	}
+}
+
+ /**
+ * Save nested terms in vocabulary.
+ */
+function save_nested_terms($terms, $vid, $parent_term_name, $vocabulary_mashine_name) {
+	$parent_term = taxonomy_get_term_by_name($parent_term_name, $vocabulary_mashine_name);
+	$tid = array_shift($parent_term)->tid;
+	$count = 0;
+	foreach($terms as $t) {
+		$item = (object) array(
+			'name' => $t['name'],
+			'id_sqlite' => array('und' => array(0 => array('value' => $t['id_sqlite']),),),
+			'vid' => $vid,
+			'weight' => $count,
+			'parent' => $tid,
+		);
+		taxonomy_term_save($item);
+		$count++;
+	}
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function techinsite_uninstall() {
+	$vocab = taxonomy_vocabulary_machine_name_load('techinsite_departments');
+    taxonomy_vocabulary_delete($vocab->vid);
+}
